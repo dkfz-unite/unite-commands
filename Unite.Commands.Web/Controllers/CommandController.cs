@@ -28,7 +28,7 @@ public class CommandController : Controller
     // Process current directory is _options.SourcePath
     // Rscript script.R data.tsv metadata.tsv result.tsv
     // Rscript script.R {data}/{proc}_data.tsv {data}/{proc}_metadata.tsv {data}/{proc}_result.tsv
-    [HttpPost] 
+    [HttpPost]
     public async Task<IActionResult> Run(string key)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -73,7 +73,7 @@ public class CommandController : Controller
 
             _process_limit--;
 
-            _logger.LogInformation($"Process finished in {stopwatch.ElapsedMilliseconds} ms");
+            _logger.LogInformation($"Process finished in {Math.Round(stopwatch.Elapsed.TotalSeconds, 2)} s");
         }
     }
 
