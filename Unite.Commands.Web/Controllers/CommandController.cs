@@ -31,6 +31,8 @@ public class CommandController : Controller
     [HttpPost] 
     public async Task<IActionResult> Run(string key)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             if (_options.Limit > 0 && _process_limit >= _options.Limit)
@@ -42,7 +44,7 @@ public class CommandController : Controller
 
             var process = PrepareProcess(command, arguments);
 
-            _logger.LogInformation($"Running command: {command}");
+            _logger.LogInformation($"Running command: {command} {arguments}");
 
             _process_limit++;
             
@@ -67,7 +69,11 @@ public class CommandController : Controller
         }
         finally
         {
+            stopwatch.Stop();
+
             _process_limit--;
+
+            _logger.LogInformation($"Process finished in {stopwatch.ElapsedMilliseconds} ms");
         }
     }
 
