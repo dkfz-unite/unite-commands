@@ -14,6 +14,5 @@ Run configured command.
 
 ### Responses
 - `200` - request was processed successfully
-- `400` - request error with one of the following code
-    - `1` - general error
-    - `2` - processes limit exided
+- `500` - command execution error
+- `501` - commands limit exceeded
