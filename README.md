@@ -28,17 +28,20 @@ To configure the application, change environment variables in either docker or [
 - All entries of `{proc}` will be replaced bu the process key.
 - Example: `"script.sh -i {data}/{proc}_input.txt -o {data}/{proc}_output.txt"`
 
-**`UNITE_SOURCE_PATH`** - Source directory.
-- Notes: Command always starts in the source directory. If the source directory is not specified, the command starts in the current dirrectory.
-- Example: `"/analysis"`
+**`UNITE_SOURCE_PATH`** - Source directory absolute path in container.
+- Notes: Command always starts in the source directory. If the source directory is not specified, the command starts in the current dirrectory.'
+- Default: `"/src"`
+- Example: `"/src"`
 
-**`UNITE_DATA_PATH`** - Data directory.
+**`UNITE_DATA_PATH`** - Data directory absolute path in container.
 - Notes: Data dirrectory is usually a mounted volume of the container.
+- Default: `"/mnt/data"`
 - Example: `"/mnt/data"`
 
 **`UNITE_LIMIT`** - Maximum amount of the commands to run simultaneously.
 - Notes: if not specified, the service will run commands without any limit.
 - Limitations: Greater than 0.
+- Default: `No limit`
 - Example: `"5"`
 
 ## Installation
@@ -48,33 +51,25 @@ Service is published as self-contained single-file executable. Running it does n
 #### Part of the command
 To make the service part of existing command application, the following steps are required:
 
-Clone pre-buit application files for required platform from project [publish](publish) directory to the directory of your command **Dockerfile** (e.g. `linux-x64`).
+Clone pre-buit application files for required platform from project [publish](publish) directory to the `app` directory of your command **Dockerfile** (e.g. `linux-x64`).
 ```
 -app
---...
+--app - clone files to this directoty
+--src
 --Dockerfile
---linux-x64
+--...
 ```
 
-Modify command **Dockerfile** configuring the web API service:
+Modify command **Dockerfile** configuring the web API service and making it a startup application of the container:
 ```dockerfile
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 ENV ASPNETCORE_hostBuilder:reloadConfigOnChange=false
 ENV UNITE_COMMAND="sh"
 ENV UNITE_COMMAND_ARGUMENTS="script.sh -i {data}/{proc}_input.txt -o {data}/{proc}_output.txt"
-ENV UNITE_SOURCE_PATH="/analysis"
+ENV UNITE_SOURCE_PATH="/src"
 ENV UNITE_DATA_PATH="/mnt/data"
 WORKDIR /app
 EXPOSE 80
-```
-
-Copy web API service files to the container:
-```dockerfile
-COPY ./linux-x64 /app 
-```
-
-Make the web service a startup command:
-```dockerfile
 CMD ["/app/Unite.Commands.Web", "--urls", "http://0.0.0.0:80"]
 ```
 
