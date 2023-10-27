@@ -17,7 +17,7 @@
         "UNITE_COMMAND_ARGUMENTS": "-la",
         "UNITE_SOURCE_PATH": "/analysis",
         "UNITE_DATA_PATH": "/analysis/data",
-        "UNITE_PROCESS_LIMIT": "5"
+        "UNITE_PROCESS_LIMIT": "1"
       }
     },
     "http": {
@@ -29,7 +29,7 @@
         "UNITE_COMMAND_ARGUMENTS": "-la",
         "UNITE_SOURCE_PATH": "/analysis",
         "UNITE_DATA_PATH": "/analysis/data",
-        "UNITE_PROCESS_LIMIT": "5"
+        "UNITE_PROCESS_LIMIT": "1"
       }
     }
   }

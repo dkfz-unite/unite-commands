@@ -7,10 +7,10 @@ namespace Unite.Commands.Web.Controllers;
 [Route("api/run")]
 public class CommandController : Controller
 {
-    private const string _src_path_key = "{src}"; // all entries for {src} will be replaced with the value of _options.SourcePath
-    private const string _data_path_key = "{data}"; // all entries for {data} will be replaced with the value of _options.DataPath
-    private const string _process_key = "{proc}"; // all entries for {proc} will be replaced with the value of the key parameter
-    private static int _process_limit = 0;
+    private const string _src_path_key = "{src}"; // All entries for {src} will be replaced with the value of _options.SourcePath
+    private const string _data_path_key = "{data}"; // All entries for {data} will be replaced with the value of _options.DataPath
+    private const string _process_key = "{proc}"; // All entries for {proc} will be replaced with the value of the key parameter
+    private static int _process_number = 0;
 
     private readonly CommandOptions _options;
     private readonly ILogger _logger;
@@ -25,55 +25,56 @@ public class CommandController : Controller
     }
 
 
-    // Process current directory is _options.SourcePath
-    // Rscript script.R data.tsv metadata.tsv result.tsv
-    // Rscript script.R {data}/{proc}_data.tsv {data}/{proc}_metadata.tsv {data}/{proc}_result.tsv
+    // Process current directory: _options.SourcePath
+    // sh script.sh -i input.txt -o output.txt 
+    // sh script.sh -i {data}/{proc}_input.txt -o {data}/{proc}_output.txt
     [HttpPost]
     public async Task<IActionResult> Run(string key)
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (_options.Limit.HasValue && _process_number >= _options.Limit)
+            return StatusCode(501, "Processes limit exceeded");
+
+        var stopwatch = new Stopwatch();
+        var command = PrepareCommand(_options.Command, key);
+        var arguments = PrepareArguments(_options.Arguments, key);
+        var process = PrepareProcess(command, arguments);
 
         try
         {
-            if (_options.Limit > 0 && _process_limit >= _options.Limit)
-                return StatusCode(501, "Processes limit exceeded");
+            _process_number++;
+            _logger.LogInformation("Starting process '{key}' ({number}/{limit})", key ?? "-", _process_number.ToString(), _options.Limit?.ToString() ?? "-");
 
-            var command = PrepareCommand(_options.Command, key);
-
-            var arguments = PrepareArguments(_options.Arguments, key);
-
-            var process = PrepareProcess(command, arguments);
-
-            _logger.LogInformation($"Running command: {command} {arguments}");
-
-            _process_limit++;
-            
+            stopwatch.Start();
             process.Start();
 
             var output = await process.StandardOutput.ReadToEndAsync();
-
+            var errors = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
 
-            process.Dispose();
+            stopwatch.Stop();
 
-            return Ok(output);
+            if (process.ExitCode > 0)
+            {
+                _logger.LogError("Process finished with exit code {code}", process.ExitCode);
+                throw new Exception(errors);
+            }
+            else
+            {
+                _logger.LogInformation("Process finished in {seconds}s", Math.Round(stopwatch.Elapsed.TotalSeconds, 2));
+                return Ok(output);
+            }
         }
         catch (Exception exception)
         {
             LogError(exception);
 
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-                return StatusCode(500, exception.Message);
-            else 
-                return StatusCode(500, "Internal server error");
+            return StatusCode(500);
         }
         finally
         {
-            stopwatch.Stop();
-
-            _process_limit--;
-
-            _logger.LogInformation($"Process finished in {Math.Round(stopwatch.Elapsed.TotalSeconds, 2)} s");
+            stopwatch.Reset();
+            process.Dispose();
+            _process_number --;
         }
     }
 
@@ -114,6 +115,7 @@ public class CommandController : Controller
         process.StartInfo.Arguments = arguments;
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.RedirectStandardError = true;
 
         if (!string.IsNullOrEmpty(_options.SourcePath))
             process.StartInfo.WorkingDirectory = _options.SourcePath;
