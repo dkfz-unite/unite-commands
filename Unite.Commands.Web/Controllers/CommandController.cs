@@ -56,6 +56,7 @@ public class CommandController : Controller
             if (process.ExitCode > 0)
             {
                 _logger.LogError("Process finished with exit code {code}", process.ExitCode);
+                _logger.LogError("{errors}", errors);
                 throw new Exception(errors);
             }
             else
