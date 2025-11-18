@@ -55,12 +55,14 @@ public class CommandController : Controller
 
             if (process.ExitCode > 0)
             {
-                _logger.LogError("Process finished with exit code {code}", process.ExitCode);
+                _logger.LogInformation("{output}", output);
                 _logger.LogError("{errors}", errors);
+                _logger.LogError("Process finished with exit code {code}", process.ExitCode);
                 throw new Exception(errors);
             }
             else
             {
+                _logger.LogInformation("{output}", output);
                 _logger.LogInformation("Process finished in {seconds}s", Math.Round(stopwatch.Elapsed.TotalSeconds, 2));
                 return Ok(output);
             }
