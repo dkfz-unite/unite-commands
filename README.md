@@ -1,12 +1,19 @@
 # Command web wrapper service
 
+Shared architecture, development workflows, and agent instructions:
+[UNITE project documentation](https://github.com/dkfz-unite/.github/blob/main/README.md).
+
 ## General
 This service allows to run dockerized command scripts using web API.
 
 Service provides the following functionality:
 - [Command web API](Docs/api.md) - REST API for running the command.
 
-Command web service is written in ASP.NET (.NET 7)
+Command web service is written in ASP.NET (.NET 8).
+
+The API runs the command configured for the container; the request supplies a
+process key for `{proc}` substitution. Analysis runners use that key to locate
+prepared files in a shared volume and write their results there.
 
 ## Access
 Environment|Address|Port
@@ -38,11 +45,17 @@ To configure the application, change environment variables in either docker or [
 - Default: `"/mnt/data"`
 - Example: `"/mnt/data"`
 
-**`UNITE_LIMIT`** - Maximum amount of the commands to run simultaneously.
+**`UNITE_PROCESS_LIMIT`** - Maximum amount of commands to run simultaneously.
 - Notes: if not specified, the service will run commands without any limit.
 - Limitations: Greater than 0.
 - Default: `No limit`
 - Example: `"5"`
+
+When the process limit is reached, the API returns HTTP `501` without starting
+the command. It does not queue that request internally. `unite-analysis`
+interprets this capacity refusal as a retryable phase result and restores its
+processing task to `Prepared`. Command execution errors return HTTP `500` and
+follow the analysis failure/manual-restart path.
 
 ## Installation
 Service is published as self-contained single-file executable. Running it does not require any additional dependencies.
